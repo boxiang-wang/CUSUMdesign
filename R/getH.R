@@ -1,9 +1,8 @@
-getH = function(distr=NULL, ARL=NULL,
-    type=c("zero start", "fast initial response", "steady state"),
-    ICmean=NULL, ICsd=NULL, OOCmean=NULL, OOCsd=NULL, 
-    nsamp=NULL, integ=NULL, ICprob=NULL, OOCprob=NULL,
-    ICvar=NULL,  ICmu=NULL, IClambda=NULL, OOCmu=NULL, 
-    ref=NULL, winsrl=NULL, winsru=NULL) {
+getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL, 
+    OOCmean=NULL, OOCsd=NULL, ICprob=NULL, OOCprob=NULL, 
+    ICvar=NULL, IClambda=NULL, rational.samp=NULL, samp.size=NULL, 
+    ref=NULL, winsrl=NULL, winsru=NULL, 
+    type=c("zero start", "fast initial response", "steady state")) {
   if (is.null(distr)) {
     cat('1 = Normal location, \n 
          2 = Normal variance, \n
@@ -23,19 +22,23 @@ getH = function(distr=NULL, ARL=NULL,
   eps0 = 0.05
   eps = 0.001
   int10 = as.integer(10)
-  plus = 1
-  denrat = 0
+  plus = 1.0
+  denrat = 0.0
   isint = FALSE
   step0 = 0.25
   quar3 = 0.75
   quar = 0.25
-  arg2 = 0
+  arg2 = 0.0
   intone = as.integer(1)
 
   ## Winsorizing constants
-  if (is.null(winsrl)) winsrl = -999 else winsrl = as.double(winsrl)
-  if (is.null(winsru)) winsru = 999 else winsru = as.double(winsru)
+  if (is.null(winsrl)) winsrl = -1.0E20 else winsrl = as.double(winsrl)
+  if (is.null(winsru)) winsru = 1.0E20 else winsru = as.double(winsru)
   ## zero-start (Z), steady state (S), or fast initial response (F)
+  if (is.null(type)) {
+    cat ("type is missing. Set type = 'Z'. \n")
+    type = "z"
+  }
   type = tolower(type)
   type = match.arg(type)
   runtype = match(type, 
@@ -53,26 +56,30 @@ getH = function(distr=NULL, ARL=NULL,
     amu1 = as.double(OOCmean)
     sigma = as.double(ICsd)
     ref = 0.5 * abs(amu1 - amu) / sigma
-    cat(sprintf("The reference value is %12.3f \n", 0.5*(amu + amu1)))
+    offset = 0.5 * (amu + amu1)
+    cat(sprintf("The offset value is %12.3f \n", offset))
     ndis = intone
   }
 
   if (distr == 2) {
     ## Normal variance
-    if (is.null(nsamp)) stop ("Rational group size 'nsamp' 
-      is missing.") else nsamp = as.integer(nsamp)
+    if (is.null(rational.samp)) stop ("Rational group size 'rational.samp' 
+      is missing.") else nsamp = as.integer(rational.samp)
     if (nsamp < 2) {
       cat("Using squared deviations from true mean. \n")
       nsamp = as.integer(2)
     }
     integ = nsamp - intone
+    # change the common variable 'ndf' in varup & vardn subroutines
+    .Fortran("cmpar2", integ)
     if (is.null(ICsd)) stop ("In-control sd 'ICsd' is missing.")
     if (is.null(OOCsd)) stop ("Out-of-control sd 'OOCsd' is missing.")
     sigma0 = as.double(ICsd)
     sigma1 = as.double(OOCsd)
     varrat = (sigma0 / sigma1) ^ 2
     ref = log(varrat) / (varrat - 1)
-    cat(sprintf("The reference value is %12.3f \n", ref * sigma0*sigma0))
+    offset = ref * sigma0 * sigma0
+    cat(sprintf("The offset value is %12.3f \n", offset))
     ndis = as.integer(2)
     if (sigma1 < sigma0) {
       plus = -1
@@ -101,13 +108,15 @@ getH = function(distr=NULL, ARL=NULL,
   }
 
   if (distr == 4) {
-    ## Bionomial
-    if (is.null(integ)) stop ("Sample size 'integ' is missing.")
+    ## Binomial
+    if (is.null(samp.size)) stop ("Sample size 'samp.size' is missing.")
     if (is.null(ICprob)) stop ("In-control probability
       'ICprob' is missing.")
     if (is.null(OOCprob)) stop ("Out-of-control probability
       'OOCprob' is missing.")
-    integ = as.integer(integ)
+    integ = as.integer(samp.size)
+    # change the common variable 'nbig' in binup & bindn subroutines
+    .Fortran("cmpar2", integ)
     arg2 = as.double(ICprob)
     pi1 = as.double(OOCprob)
     if(min(pi1, arg2) <= 0 || max(pi1, arg2) > 1)
@@ -115,7 +124,7 @@ getH = function(distr=NULL, ARL=NULL,
     ref = -integ * log((1 - pi1)/(1 - arg2)) / log(pi1 * (1 - arg2)/
       (arg2 * ((1 - pi1))))
     ndis = as.integer(6)
-    if (pi1 > arg2) {
+    if (pi1 < arg2) {
       plus = -1
       ndis = as.integer(7)
     } 
@@ -127,15 +136,17 @@ getH = function(distr=NULL, ARL=NULL,
     ## Negative binomial
     if (is.null(ICmean)) stop ("In-control mean 'ICmean' is missing.")
     if (is.null(ICvar)) stop ("In-control variance 'ICvar' is missing.")
-    if (is.null(OOCvar)) stop ("Out-of-control variance
-      'OOCvar' is missing.")
+    if (is.null(OOCmean)) stop ("Out-of-control mean
+      'OOCmean' is missing.")
     aver = as.double(ICmean)
     varian = as.double(ICvar)
-    OOCvar = as.double(aver1)
+    aver1 = as.double(OOCmean)
     if(min(aver, aver1, varian - aver) <= 0) 
       stop("Means must be > 0 and variance > in-control mean.")
     arg2 = aver / (varian - aver)
     realno = aver * arg2
+    # change the common variable 'r' in nbinup & nbindn subroutines
+    .Fortran("cmpar", realno)
     c1 = arg2 * aver / aver1
     ref = - realno * log((c1*(1+arg2))/(arg2*(1+c1))) /
       log((1+arg2)/(1+c1))
@@ -149,14 +160,17 @@ getH = function(distr=NULL, ARL=NULL,
   }
 
   if (distr == 6) {
-    if (is.null(ICmu)) stop ("In-control mu 'ICmu' is missing.")
+  ## Inverse Gaussian mean
+    if (is.null(ICmean)) stop ("In-control mean 'ICmean' is missing.")
     if (is.null(IClambda)) stop ("In-control lambda 
       'IClambda' is missing.")
-    if (is.null(OOCmu)) stop ("Out-of-control mu 'OOCmu' is missing.")
-    arg2 = as.double(ICmu)
+    if (is.null(OOCmean)) stop ("Out-of-control mean 'OOCmean' is missing.")
+    arg2 = as.double(ICmean)
     realno = as.double(IClambda)
-    amu1 = as.double(OOCmu)
-    if (min(arg2, realno, amu1) <= zero)
+    # change the common variable 'alam' in gauiup & gauidn subroutines
+    .Fortran("cmpar", realno)
+    amu1 = as.double(OOCmean)
+    if (min(arg2, realno, amu1) <= 0.0)
       stop("All parameters must be strictly positive.")
     ref = 2 * arg2 * amu1 / (arg2 + amu1)
     step0 = min(arg2, realno, amu1) * 0.5
@@ -206,39 +220,49 @@ getH = function(distr=NULL, ARL=NULL,
       winlo = -winsru
       winhi = -winsrl
     }
-    cal = .Fortran('calcus', hhi=as.double(hhi), 
-      ref=as.double(plus*ref), 
+    cal = .Fortran('calcus', as.double(hhi), as.double(plus*ref), 
       as.integer(ndis), as.double(denrat), as.double(arg2), 
-      as.double(winlo), as.double(winhi),
-      regarl=as.double(0), firarl=as.double(0), 
-      ssarl=as.double(0), eps0=eps0, esterr=as.double(0), 
-      ifault=as.integer(0))
-
-    print(cal)
-
-    hhi = cal$hhi
-    ref = cal$ref
+      as.double(winlo), as.double(winhi), regarl=as.double(0), 
+      firarl=as.double(0), ssarl=as.double(0), eps0=eps0, 
+      esterr=as.double(0), ifault=as.integer(0))
     regarl = cal$regarl
     firarl = cal$firarl
     ssarl = cal$ssarl
     esterr = cal$esterr
     ifault = cal$ifault
+
+    #if(inner == 1)  
+    #print(cal)
+
     maxfau = max(maxfau,ifault)
     if (ifault != 0) {
       good = 0
       if (esterr > 0) good = -log10(esterr) 
-      cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f %7.1f 
-        estimated good digits \n', 
-        h, regarl, firarl, ssarl))
+      cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f \n', 
+        hhi, regarl, firarl, ssarl))
     }
+
+    #  print("gotarl1")
+    # print(gotarl)
+
+
+
     gotarl = switch(runtype, regarl, firarl, ssarl)
     ahi = gotarl
     if (gotarl > ARL) break
     hlo = hhi
     ihlo = ihhi
     alow = gotarl
+
+    #  print("gotarl2")
+    # print(gotarl)
+
+
   }
   if (gotarl <= ARL) stop ("Ranging failed. Exit.")
+
+
+
 
   ## Refinement
   logscl = (min(alow, ahi, ARL) > 0)
@@ -251,47 +275,44 @@ getH = function(distr=NULL, ARL=NULL,
     ahilg = ahi
     arllg = ARL 
   }
+
   for (inner in seq(20)) {
     ratio = (arllg - alowlg) / (ahilg - alowlg)
     ratio = min(quar3, max(quar, ratio))
     test = hlo + ratio * (hhi - hlo)
     if (isint && ((ihhi - ihlo) == 1)) {
-      cat(sprintf("k %8.4f %12t h %8.4f, ARL %10.2f, 
-        h %8.4f, ARL %10.2f \n", ref, hlo, alow, hhi, ahi))
+      cat(sprintf("k %8.4f   h %8.4f  ARL %10.2f  
+             h %8.4f  ARL %10.2f \n", ref, hlo, alow, hhi, ahi))
       test = hhi
       gothi = ahi
       break
     }
     if (isint) {
-      intval = (ihlo + ihhi + intone) / 2
+      intval = as.integer((ihlo + ihhi + intone) / 2)
       intval = max(ihlo + intone, 
         min(ihhi - intone, intval))
       test = as.double(intval) / denrat
     } 
-    cal2 = .Fortran('calcus', test=as.double(test), 
-      ref=as.double(plus*ref), 
+    cal2 = .Fortran('calcus', as.double(test), as.double(plus*ref), 
       as.integer(ndis), as.double(denrat), as.double(arg2), 
-      as.double(winlo), as.double(winhi),
-      regarl=as.double(0), firarl=as.double(0), 
-      ssarl=as.double(0), eps=eps, esterr=as.double(1), 
-      ifault=as.integer(0))
-    print(cal2)
-    test = cal2$test
-    ref = cal2$ref
+      as.double(winlo), as.double(winhi), regarl=as.double(0), 
+      firarl=as.double(0), ssarl=as.double(0), eps=eps, 
+      esterr=as.double(1), ifault=as.integer(0))
     regarl = cal2$regarl
     firarl = cal2$firarl
     ssarl = cal2$ssarl
     esterr = cal2$esterr
     ifault = cal2$ifault
     maxfau = max(maxfau,ifault)
+
+    #if(inner == 1 || inner == 2)  print(cal2)
+
     if (ifault == 0) {
-      cat(sprintf(' test %11.4f arls %9.1f %7.1f %7.1f 
-        estimated good digits \n', 
+      cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f \n', 
         test, regarl, firarl, ssarl))
     } else {
       good = -log10(esterr)
-      cat(sprintf(' test %11.4f arls %9.1f %7.1f %7.1f %7.1f
-        estimated good digits \n', 
+      cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f %7.1f \n', 
         test, regarl, firarl, ssarl, good))
     }
     gotarl = switch(runtype, regarl, firarl, ssarl)
@@ -308,22 +329,30 @@ getH = function(distr=NULL, ARL=NULL,
       ihhi = intval
       ahi = gotarl
     }
-    if (abs(gotarl / ARL - 1) < eps) break
+
+    # print("inner")
+    # print(inner)
+    # print("eps")
+    # print(eps)
+    # print("ARL")
+    # print(ARL)
+
+    if (abs(gotarl / ARL - 1.0) < eps) break
   }
-  if (abs(gotarl / ARL - 1) >= eps) {
+  if (inner > 40) {
     stop(sprintf("Convergence failed. Best guesses.
       \n k %8.4f   h %8.4f ARL %10.2f 
         h %8.4f ARL %10.2f \n", ref, hlo, alow, hhi, ahi))
   }
   if(ndis == 1) {
     ## Normal location
-    fit = .Fortran('calcus', test=as.double(test), as.double(-abs(ref)), 
+    fit = .Fortran('calcus', as.double(test), as.double(-abs(ref)), 
       as.integer(ndis), as.double(denrat), as.double(arg2), 
       as.double(winlo), as.double(winhi),
       regarl=as.double(0), firarl=as.double(0), ssarl=as.double(0),
       eps, esterr=as.double(1), ifault=as.integer(0))
-    test = fit$test * sigma
-    cat(sprintf("DI %8.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
+    test = test * sigma
+    cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gotarl, fit$regarl,
       fit$firarl, fit$ssarl)) 
     res = list(DI = test, IC_ARL = gotarl, OOCARL_Z = fit$regarl,
@@ -332,14 +361,14 @@ getH = function(distr=NULL, ARL=NULL,
 
   if(ndis == 2 || ndis == 3) {
     ## Normal variance
-    fit = .Fortran('calcus', test=as.double(test*varrat), 
+    fit = .Fortran('calcus', as.double(test*varrat), 
       as.double(plus * ref * varrat), 
       as.integer(ndis), as.double(denrat), as.double(arg2), 
       as.double(winlo), as.double(winhi),
       regarl=as.double(0), firarl=as.double(0), ssarl=as.double(0),
       eps, esterr=as.double(1), ifault=as.integer(0))
-    test = fit$test * sigma0 * sigma0
-    cat(sprintf("DI %8.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
+    test = test * sigma0 * sigma0
+    cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gotarl, fit$regarl,
       fit$firarl, fit$ssarl)) 
     res = list(DI = test, IC_ARL = gotarl, OOCARL_Z = fit$regarl,
@@ -348,14 +377,13 @@ getH = function(distr=NULL, ARL=NULL,
 
   if(ndis == 4 || ndis == 5) {
     ## Poisson
-    fit = .Fortran('calcus', test=as.double(test), 
+    fit = .Fortran('calcus', as.double(test), 
       as.double(plus * ref), 
       as.integer(ndis), as.double(denrat), as.double(amu1), 
       as.double(winlo), as.double(winhi),
       regarl=as.double(0), firarl=as.double(0), ssarl=as.double(0),
       eps, esterr=as.double(1), ifault=as.integer(0))
-    test = fit$test * sigma0 * sigma0
-    cat(sprintf("DI %8.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
+    cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
     res = list(DI = test, IC_ARL = gothi, OOCARL_Z = fit$regarl,
@@ -364,48 +392,49 @@ getH = function(distr=NULL, ARL=NULL,
 
   if(ndis == 6 || ndis == 7) {
     ## Bionomial
-    fit = .Fortran('calcus', test=as.double(test), 
+    fit = .Fortran('calcus', as.double(test), 
       as.double(plus * ref), 
       as.integer(ndis), as.double(denrat), as.double(pi1), 
       as.double(winlo), as.double(winhi),
       regarl=as.double(0), firarl=as.double(0), ssarl=as.double(0),
       eps, esterr=as.double(1), ifault=as.integer(0))
-    cat(sprintf("DI %8.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
-      FIR %7.1f SS %7.1f \n", fit$test, gothi, fit$regarl,
+    cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
+      FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = fit$test, IC_ARL = gothi, OOCARL_Z = fit$regarl,
+    res = list(DI = test, IC_ARL = gothi, OOCARL_Z = fit$regarl,
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
-  if(ndis == 6 || ndis == 7) {
+  if(ndis == 8 || ndis == 9) {
     ## Negative Bionomial
-    fit = .Fortran('calcus', test=as.double(test), 
+    fit = .Fortran('calcus', as.double(test), 
       as.double(plus * ref), 
       as.integer(ndis), as.double(denrat), as.double(c1), 
       as.double(winlo), as.double(winhi),
       regarl=as.double(0), firarl=as.double(0), ssarl=as.double(0),
       eps, esterr=as.double(1), ifault=as.integer(0))
-    cat(sprintf("DI %8.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
-      FIR %7.1f SS %7.1f \n", fit$test, gothi, fit$regarl,
+    cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
+      FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = fit$test, IC_ARL = gothi, OOCARL_Z = fit$regarl,
+    res = list(DI = test, IC_ARL = gothi, OOCARL_Z = fit$regarl,
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
-   if(ndis == 8 || ndis == 9) {
-    ## Bionomial
-    fit = .Fortran('calcus', test=as.double(test), 
+   if(ndis == 10 || ndis == 11) {
+    ## Inverse Gaussian mean
+    fit = .Fortran('calcus', as.double(test), 
       as.double(plus * ref), 
       as.integer(ndis), as.double(denrat), as.double(amu1), 
       as.double(winlo), as.double(winhi),
       regarl=as.double(0), firarl=as.double(0), ssarl=as.double(0),
       eps, esterr=as.double(1), ifault=as.integer(0))
-    cat(sprintf("DI %8.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
-      FIR %7.1f SS %7.1f \n", fit$test, gotarl, fit$regarl,
+    cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
+      FIR %7.1f SS %7.1f \n", test, gotarl, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = fit$test, IC_ARL = gotarl, OOCARL_Z = fit$regarl,
+    res = list(DI = test, IC_ARL = gotarl, OOCARL_Z = fit$regarl,
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
+  ## Output the result
   res
 }
 
