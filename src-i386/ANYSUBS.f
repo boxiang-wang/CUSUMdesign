@@ -6,7 +6,7 @@
       DATA HALF/0.5D0/,P01/0.01D0/,ONE/1.D0/
       ERRMAX = ONE
       CHANGE = .FALSE.
-      DO 30 IDENRAT = 1, 64
+      DO 30 IDENRAT = 1, 10
       DENRAT = DENRAT + 1.0D0
       REFDEN = REF * DENRAT
       DIDEN  = DI  * DENRAT

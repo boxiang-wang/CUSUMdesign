@@ -21,8 +21,7 @@ CUSUMchart(summand, kup, kdn, hup, hdn, nameof, ylab)
 
 \examples{
 dat = c(10, 8, 11, 8, 8, 7, 9, 14, 9, 14, 13, 9, 13, 11, 14, 12, 12)
-CUSUMchart(dat, kup=2.5, kdn=-2.5, hup=3.5, hdn=-3.5, 
-  nameof="CUSUM chart", ylab="weight")
+CUSUMchart(dat, kup=11, kdn=9, hup=5, hdn=5, nameof="CUSUM chart", ylab="weight")
 }
 
 \keyword{CUSUM}

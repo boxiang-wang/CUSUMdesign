@@ -32,8 +32,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
   intone = as.integer(1)
 
   ## Winsorizing constants
-  if (is.null(winsrl)) winsrl = -1.0E20 else winsrl = as.double(winsrl)
-  if (is.null(winsru)) winsru = 1.0E20 else winsru = as.double(winsru)
+  if (is.null(winsrl)) winsrl = -999 else winsrl = as.double(winsrl)
+  if (is.null(winsru)) winsru = 999 else winsru = as.double(winsru)
   ## zero-start (Z), steady state (S), or fast initial response (F)
   if (is.null(type)) {
     cat ("type is missing. Set type = 'Z'. \n")
@@ -55,9 +55,11 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     amu = as.double(ICmean)
     amu1 = as.double(OOCmean)
     sigma = as.double(ICsd)
-    ref = 0.5 * abs(amu1 - amu) / sigma
+    if (is.null(ref)) 
+      ref = 0.5 * abs(amu1 - amu) / sigma else
+      cat("ref is not user-specifed for normal location, \n")
     offset = 0.5 * (amu + amu1)
-    cat(sprintf("The offset value is %12.3f \n", offset))
+    cat(sprintf("The reference value is %12.3f \n", offset))
     ndis = intone
   }
 
@@ -77,9 +79,11 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     sigma0 = as.double(ICsd)
     sigma1 = as.double(OOCsd)
     varrat = (sigma0 / sigma1) ^ 2
-    ref = log(varrat) / (varrat - 1)
+    if (is.null(ref))
+      ref = log(varrat) / (varrat - 1) else
+      cat("ref is not user-specifed for normal variance, \n")
     offset = ref * sigma0 * sigma0
-    cat(sprintf("The offset value is %12.3f \n", offset))
+    cat(sprintf("The reference value is %12.3f \n", offset))
     ndis = as.integer(2)
     if (sigma1 < sigma0) {
       plus = -1
@@ -97,7 +101,9 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     if (min(arg2, amu1) <= 0) 
       stop("Invalid - means must be strictly positive.'")
     if (is.null(ref))
-      ref = (amu1 - arg2) / log(amu1 / arg2)
+      ref = (amu1 - arg2) / log(amu1 / arg2) else
+      ref = as.double(ref)
+    cat(sprintf("The reference value is %12.3f \n", ref))
     ndis = as.integer(4)
     if (amu1 < arg2) {
       plus = -1
@@ -121,8 +127,11 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     pi1 = as.double(OOCprob)
     if(min(pi1, arg2) <= 0 || max(pi1, arg2) > 1)
       stop("Invalid IC or OOC probability.")
-    ref = -integ * log((1 - pi1)/(1 - arg2)) / log(pi1 * (1 - arg2)/
-      (arg2 * ((1 - pi1))))
+    if (is.null(ref))
+      ref = -integ * log((1 - pi1)/(1 - arg2)) / log(pi1 * (1 - arg2)/
+      (arg2 * ((1 - pi1)))) else
+      ref = as.double(ref)
+    cat(sprintf("The reference value is %12.3f \n", ref))
     ndis = as.integer(6)
     if (pi1 < arg2) {
       plus = -1
@@ -148,8 +157,11 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     # change the common variable 'r' in nbinup & nbindn subroutines
     .Fortran("cmpar", realno)
     c1 = arg2 * aver / aver1
-    ref = - realno * log((c1*(1+arg2))/(arg2*(1+c1))) /
-      log((1+arg2)/(1+c1))
+    if (is.null(ref))
+      ref = - realno * log((c1*(1+arg2))/(arg2*(1+c1))) /
+        log((1+arg2)/(1+c1)) else
+      ref = as.double(ref)
+    cat(sprintf("The reference value is %12.3f \n", ref))
     ndis = as.integer(8)
     if (aver1 < aver) {
       plus = -1
@@ -172,7 +184,10 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     amu1 = as.double(OOCmean)
     if (min(arg2, realno, amu1) <= 0.0)
       stop("All parameters must be strictly positive.")
-    ref = 2 * arg2 * amu1 / (arg2 + amu1)
+    if (is.null(ref))
+      ref = 2 * arg2 * amu1 / (arg2 + amu1) else
+      ref = as.double(ref)
+    cat(sprintf("The reference value is %12.3f \n", ref))
     step0 = min(arg2, realno, amu1) * 0.5
     ndis = as.integer(10)
     if (amu1 < arg2){
@@ -230,10 +245,6 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     ssarl = cal$ssarl
     esterr = cal$esterr
     ifault = cal$ifault
-
-    #if(inner == 1)  
-    #print(cal)
-
     maxfau = max(maxfau,ifault)
     if (ifault != 0) {
       good = 0
@@ -241,28 +252,14 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
       cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f \n', 
         hhi, regarl, firarl, ssarl))
     }
-
-    #  print("gotarl1")
-    # print(gotarl)
-
-
-
     gotarl = switch(runtype, regarl, firarl, ssarl)
     ahi = gotarl
     if (gotarl > ARL) break
     hlo = hhi
     ihlo = ihhi
     alow = gotarl
-
-    #  print("gotarl2")
-    # print(gotarl)
-
-
   }
   if (gotarl <= ARL) stop ("Ranging failed. Exit.")
-
-
-
 
   ## Refinement
   logscl = (min(alow, ahi, ARL) > 0)
@@ -304,15 +301,13 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     esterr = cal2$esterr
     ifault = cal2$ifault
     maxfau = max(maxfau,ifault)
-
-    #if(inner == 1 || inner == 2)  print(cal2)
-
     if (ifault == 0) {
-      cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f \n', 
-        test, regarl, firarl, ssarl))
+#      cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f \n', 
+#        test, regarl, firarl, ssarl))
     } else {
       good = -log10(esterr)
-      cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f %7.1f \n', 
+      cat(sprintf(' h %11.4f arls %9.1f %7.1f %7.1f %7.1f 
+        estimated good digits \n', 
         test, regarl, firarl, ssarl, good))
     }
     gotarl = switch(runtype, regarl, firarl, ssarl)
@@ -329,14 +324,6 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
       ihhi = intval
       ahi = gotarl
     }
-
-    # print("inner")
-    # print(inner)
-    # print("eps")
-    # print(eps)
-    # print("ARL")
-    # print(ARL)
-
     if (abs(gotarl / ARL - 1.0) < eps) break
   }
   if (inner > 40) {
@@ -355,7 +342,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gotarl, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = test, IC_ARL = gotarl, OOCARL_Z = fit$regarl,
+    res = list(DI = test, ref = offset, 
+      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
@@ -371,7 +359,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gotarl, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = test, IC_ARL = gotarl, OOCARL_Z = fit$regarl,
+    res = list(DI = test, ref = offset, 
+      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
@@ -386,7 +375,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = test, IC_ARL = gothi, OOCARL_Z = fit$regarl,
+    res = list(DI = test, ref = ref, 
+      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
@@ -401,7 +391,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = test, IC_ARL = gothi, OOCARL_Z = fit$regarl,
+    res = list(DI = test, ref = ref, 
+      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
@@ -416,7 +407,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = test, IC_ARL = gothi, OOCARL_Z = fit$regarl,
+    res = list(DI = test, ref = ref, 
+      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
@@ -431,7 +423,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     cat(sprintf("DI %11.3f IC ARL %9.1f  OOC ARL Zero start %7.1f
       FIR %7.1f SS %7.1f \n", test, gotarl, fit$regarl,
       fit$firarl, fit$ssarl)) 
-    res = list(DI = test, IC_ARL = gotarl, OOCARL_Z = fit$regarl,
+    res = list(DI = test, ref = ref, 
+      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
   ## Output the result

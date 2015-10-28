@@ -38,5 +38,5 @@ CUSUMchart = function(summand, kup, kdn, hup, hdn, nameof, ylab) {
     cat(sprintf("Signal %4.0f last estimated IC %4.0f new mean estimate %6.2f \n",
      signal, lastIC, newmean))
   }
-  return(list(lastIC=lastIC, newmean=newmean))  
+  return(list(signal = signal, lastIC = lastIC, newmean = newmean))  
 }
