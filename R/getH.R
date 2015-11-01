@@ -1,7 +1,6 @@
 getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL, 
-    OOCmean=NULL, OOCsd=NULL, ICprob=NULL, OOCprob=NULL, 
-    ICvar=NULL, IClambda=NULL, rational.samp=NULL, samp.size=NULL, 
-    ref=NULL, winsrl=NULL, winsru=NULL, 
+    OOCmean=NULL, OOCsd=NULL, ICprob=NULL, OOCprob=NULL, ICvar=NULL, 
+    IClambda=NULL, samp.size=NULL, ref=NULL, winsrl=NULL, winsru=NULL, 
     type=c("zero start", "fast initial response", "steady state")) {
   if (is.null(distr)) {
     cat('1 = Normal location, \n 
@@ -36,8 +35,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
   if (is.null(winsru)) winsru = 999 else winsru = as.double(winsru)
   ## zero-start (Z), steady state (S), or fast initial response (F)
   if (is.null(type)) {
-    cat ("type is missing. Set type = 'Z'. \n")
-    type = "z"
+    cat ("type is missing. Set type = 'F' (FIR). \n")
+    type = "F"
   }
   type = tolower(type)
   type = match.arg(type)
@@ -65,8 +64,8 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
 
   if (distr == 2) {
     ## Normal variance
-    if (is.null(rational.samp)) stop ("Rational group size 'rational.samp' 
-      is missing.") else nsamp = as.integer(rational.samp)
+    if (is.null(samp.size)) stop ("Rational group size 'samp.size' 
+      is missing.") else nsamp = as.integer(samp.size)
     if (nsamp < 2) {
       cat("Using squared deviations from true mean. \n")
       nsamp = as.integer(2)

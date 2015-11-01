@@ -1,2 +1,2 @@
-useDynLib("CUSUM")
-export(getARL, getH, CUSUMchart)
+useDynLib("CUSUMdesign")
+export(getARL, getH)

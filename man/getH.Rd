@@ -5,7 +5,7 @@
 \usage{
 getH(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL, 
     OOCmean=NULL, OOCsd=NULL, ICprob=NULL, OOCprob=NULL, 
-    ICvar=NULL, IClambda=NULL, rational.samp=NULL, samp.size=NULL, 
+    ICvar=NULL, IClambda=NULL, samp.size=NULL, 
     ref=NULL, winsrl=NULL, winsru=NULL, 
     type=c("zero start", "fast initial response", "steady state"))
 }
@@ -20,19 +20,18 @@ getH(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
   \item{OOCprob}{Out-of-control success probability, which has to be provided when distr = 4 (binomial); 0 < prob <= 1. }
   \item{ICvar}{In-control variance, which has to be provided when distr = 5 (negative binomial). The value has to be larger than the in-control mean 'ICmean'. } 
   \item{IClambda}{In-control shape parameter for inverse Gaussian distribution. The argument 'IClambda' has to be provided when distr = 6 (inverse Gaussian mean). } 
-  \item{rational.samp}{Rational subgroup size, an integer which has to be provided when distr = 2 (normal variance). } 
-  \item{samp.size}{Sample size, an integer which has to be provided when distr = 4 (binomial). } 
+  \item{samp.size}{Sample size, an integer which has to be provided when distr = 2 (normal variance) or distr = 4 (binomial). } 
   \item{ref}{Optional reference value. }
   \item{winsrl}{Lower Winsorizing constant. Use NULL or -999 if Winsorization is not needed. } 
   \item{winsru}{Upper Winsorizing constant. Use NULL or 999 if Winsorization is not needed. } 
-  \item{type}{A string for CUSUM type: "Z" for zero-start CUSUM, "F" for fast-initial-response CUSUM, and "S" for steady-state CUSUM. }
+  \item{type}{A string for CUSUM type: "Z" for zero-start CUSUM, "F" for fast-initial-response CUSUM, and "S" for steady-state CUSUM. Default is "F". }
 }
 
 
 \details{Computes the decision interval H when the reference value and the average run length are given. For each case, the necessary parameters are listed as follows. \cr
 \cr
 Normal mean (distr = 1): \code{ICmean}, \code{ICsd}, \code{OOCmean}. \cr
-Normal variance (distr = 2): \code{rational.samp}, \code{ICsd}, \code{OOCsd} \cr
+Normal variance (distr = 2): \code{samp.size}, \code{ICsd}, \code{OOCsd} \cr
 Poisson (distr = 3): \code{ICmean}, \code{OOCmean}. \cr
 Binomial (dist = 4): \code{samp.size}, \code{ICprob}, \code{OOCprob}. \cr
 Negative binomial (distr = 5): \code{ICmean}, \code{Icvar}, \code{OOCmean}. \cr
@@ -62,13 +61,13 @@ Hawkins, D. M. and Olwell, D. H. (1998)
 getH(distr=1, ICmean=10, ICsd=2, OOCmean=15, ARL=1000, type="F")
 
 # normal variance
-getH(distr=2, ICsd=2, OOCsd=4, rational.samp=5, ARL=1000, type="F")
+getH(distr=2, ICsd=2, OOCsd=4, samp.size=5, ARL=1000, type="F")
 
 # Poission
 getH(distr=3, ICmean=2, OOCmean=3, ARL=100, type="F")
 
 # Binomial
-getH(distr=4, ICprob=0.2, OOCprob=0.6, samp.size=5, ARL=1000, type="F")
+getH(distr=4, ICprob=0.2, OOCprob=0.6, samp.size=100, ARL=1000, type="F")
 
 # Negative binomial
 getH(distr=5, ICmean=1, ICvar=3, OOCmean=2, ARL=100, type="F")

@@ -1,7 +1,6 @@
 getARL = function(distr=NULL, K=NULL, H=NULL,
     Mean=NULL, std=NULL, prob=NULL, Var=NULL, mu=NULL, lambda=NULL, 
-    rational.samp=NULL, samp.size=NULL, 
-    is.upward=NULL, winsrl=NULL, winsru=NULL) {
+    samp.size=NULL, is.upward=NULL, winsrl=NULL, winsru=NULL) {
   if (is.null(distr)) {
     cat('1 = Normal location, \n 
          2 = Normal variance, \n
@@ -49,8 +48,8 @@ getARL = function(distr=NULL, K=NULL, H=NULL,
 
   if (distr == 2) {
     ## Normal variance
-    if (is.null(rational.samp)) stop ("Rational group size 'rational.samp' 
-      is missing.") else nsamp = as.integer(rational.samp)
+    if (is.null(samp.size)) stop ("Rational group size 'samp.size' 
+      is missing.") else nsamp = as.integer(samp.size)
     if (nsamp < 2) {
       cat("Charting squared deviations from true mean. \n")
       nsamp = as.integer(2)

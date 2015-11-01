@@ -9,5 +9,5 @@
       COMMON /PARMS/ A, B
       DOUBLE PRECISION :: A
       INTEGER :: B, I
-      B = I   
+      B = I
       END
