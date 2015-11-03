@@ -1,7 +1,7 @@
 getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL, 
     OOCmean=NULL, OOCsd=NULL, ICprob=NULL, OOCprob=NULL, ICvar=NULL, 
     IClambda=NULL, samp.size=NULL, ref=NULL, winsrl=NULL, winsru=NULL, 
-    type=c("zero start", "fast initial response", "steady state")) {
+    type=c("fast initial response", "zero start", "steady state")) {
   if (is.null(distr)) {
     cat('1 = Normal location, \n 
          2 = Normal variance, \n

@@ -7,7 +7,7 @@ getH(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
     OOCmean=NULL, OOCsd=NULL, ICprob=NULL, OOCprob=NULL, 
     ICvar=NULL, IClambda=NULL, samp.size=NULL, 
     ref=NULL, winsrl=NULL, winsru=NULL, 
-    type=c("zero start", "fast initial response", "steady state"))
+    type=c("fast initial response", "zero start", "steady state"))
 }
 \arguments{
   \item{distr}{Integer valued from 1 to 6: 1 refers to ``normal mean", 2 refers to ``normal variance", 3 refers to ``Poisson", 4 refers to ``binomial", 5 refers to ``negative binomial", 6 refers to ``inverse Gaussian mean". }
@@ -24,7 +24,7 @@ getH(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
   \item{ref}{Optional reference value. }
   \item{winsrl}{Lower Winsorizing constant. Use NULL or -999 if Winsorization is not needed. } 
   \item{winsru}{Upper Winsorizing constant. Use NULL or 999 if Winsorization is not needed. } 
-  \item{type}{A string for CUSUM type: "Z" for zero-start CUSUM, "F" for fast-initial-response CUSUM, and "S" for steady-state CUSUM. Default is "F". }
+  \item{type}{A string for CUSUM type: "F" for fast-initial-response CUSUM, "Z" for zero-start CUSUM, and "S" for steady-state CUSUM. Default is "F". }
 }
 
 
