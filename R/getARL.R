@@ -24,8 +24,8 @@ getARL = function(distr=NULL, K=NULL, H=NULL,
   arg2 = 0.0
 
   ## Winsorizing constants
-  if (is.null(winsrl)) winsrl = -1.0E20 else winsrl = as.double(winsrl)
-  if (is.null(winsru)) winsru = 1.0E20 else winsru = as.double(winsru)
+  if (is.null(winsrl)) winsrl = -1.0E8 else winsrl = as.double(winsrl)
+  if (is.null(winsru)) winsru = 1.0E8 else winsru = as.double(winsru)
 
   ## read parameters for different distributions
   if (distr == 1) {
@@ -189,7 +189,6 @@ getARL = function(distr=NULL, K=NULL, H=NULL,
   ssarl = cal$ssarl
   esterr = cal$esterr
   ifault = cal$ifault
- 
   if (ifault > 0) {
     cat(sprintf("Error code %5i was returned. \n", ifault))
   } 
