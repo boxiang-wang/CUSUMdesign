@@ -375,7 +375,7 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
       FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
     res = list(DI = test, ref = ref, 
-      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
+      IC_ARL = gothi, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
@@ -391,7 +391,7 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
       FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
     res = list(DI = test, ref = ref, 
-      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
+      IC_ARL = gothi, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
@@ -407,7 +407,7 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
       FIR %7.1f SS %7.1f \n", test, gothi, fit$regarl,
       fit$firarl, fit$ssarl)) 
     res = list(DI = test, ref = ref, 
-      IC_ARL = gotarl, OOCARL_Z = fit$regarl, 
+      IC_ARL = gothi, OOCARL_Z = fit$regarl, 
       OOCARL_F = fit$firarl, OOCARL_S = fit$ssarl)
   }
 
