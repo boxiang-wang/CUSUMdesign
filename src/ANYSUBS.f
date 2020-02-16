@@ -1,7 +1,11 @@
       SUBROUTINE GETDEN(REF,DI,DENRAT,ECHO,CHANGE)
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
       LOGICAL ECHO,CHANGE
+      ECHO = .FALSE.
       DENRAT = 0.0D0
+      USEREF = 0.0D0
+      USEDI = 0.0D0
+      USEDEN = 0.0D0
       IDENRAT = 1
       DATA HALF/0.5D0/,P01/0.01D0/,ONE/1.D0/
       ERRMAX = ONE
@@ -22,8 +26,8 @@
         ENDIF
  30   CONTINUE
 c      IF (ECHO) WRITE(*,101) INT(USEDEN)
- 101  FORMAT(' CHOICES NOT RATIONAL WITH SMALL ENOUGH DENOMINATOR'/
-     1 ' THEY WILL BE EDITED TO THE CLOSEST MANAGEABLE DENOMINATOR',I4)
+c 110  FORMAT(' CHOICES NOT RATIONAL WITH SMALL ENOUGH DENOMINATOR'/
+c     1 ' THEY WILL BE EDITED TO THE CLOSEST MANAGEABLE DENOMINATOR',I4)
       REF = USEREF
       DI  = USEDI
       DENRAT = USEDEN
@@ -77,6 +81,7 @@ C
 C
       DOUBLE PRECISION FUNCTION NORMAL(ARG,ARG2)
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      ARG2 = ARG2
       CUMDIS = PHI(ARG)
       NORMAL = CUMDIS
       RETURN
@@ -85,6 +90,7 @@ C
       DOUBLE PRECISION FUNCTION VARUP(ARG,ARG2)
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
       COMMON /PARMS/ REALNO, NDF
+      ARG2 = ARG2
       DF = NDF
       CUMDIS = 0
       IF (ARG .LT. 0) GO TO 10
@@ -98,6 +104,7 @@ C
       DOUBLE PRECISION FUNCTION VARDN(ARG,ARG2)
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
       COMMON /PARMS/ REALNO, NDF
+      ARG2 = ARG2
       DF = NDF
       CUMDIS = 1
       IF (ARG .GT. 0) GO TO 10
@@ -112,7 +119,7 @@ C
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
       CUMDIS = 0
       IF (ARG .LT. 0) GO TO 10
-      INX = ARG + .5
+      INX = INT(ARG + .5)
       T0 = EXP(-ARG2)
       DO 1 I = 0, INX
       CUMDIS = CUMDIS + T0
@@ -128,7 +135,7 @@ C
       CUMDIS = 1
       IF (ARG .GE. 0) GO TO 10
       AARG = ABS(ARG)
-      INX = AARG - .5
+      INX = INT(AARG - .5)
       T0 = EXP(-ARG2)
       DO 1 I = 0, INX
       CUMDIS = CUMDIS - T0
@@ -146,7 +153,7 @@ C
       BIGN = NBIG
       CUMDIS = 0
       IF (ARG .LT. 0) GO TO 10
-      INX = ARG + .5
+      INX = INT(ARG + .5)
       T0 = (ONE - ARG2) ** NBIG
       DO 1 I = 0, INX
       FI = I
@@ -166,7 +173,7 @@ C
       CUMDIS = 1
       IF (ARG .GE. 0) GO TO 10
       AARG = ABS(ARG)
-      INX = AARG - .5
+      INX = INT(AARG - .5)
       T0 = (ONE - ARG2) ** NBIG
       DO 1 I = 0, INX
       FI = I
@@ -184,7 +191,7 @@ C
       DATA ZERO/0.D0/, ONE/1.D0/
       CUMDIS = 0
       IF (ARG .LT. 0) GO TO 10
-      INX = ARG + .5
+      INX = INT(ARG + .5)
       T0 = (C / (ONE + C)) ** R
       CUMDIS = ZERO
       DO 1 I = 0, INX
@@ -204,7 +211,7 @@ C
       CUMDIS = 1
       IF (ARG .GE. 0) GO TO 10
       AARG = ABS(ARG)
-      INX = AARG - .5
+      INX = INT(AARG - .5)
       T0 = (C / (ONE + C)) ** R
       DO 1 I = 0, INX
       FI = I
@@ -336,6 +343,9 @@ C
       REGARL=0
       FIRARL=0
       SSARL =0
+      MB1=0
+      KNUMER=0
+
       ESTERR = ONE
       DO 5 I = -2*MAXPOW-2, 2*MAXPOW+2
  5    PHITAB(I) = ZERO
@@ -349,12 +359,12 @@ C     IF (WINSRU.LE.REF) IFAULT=IFAULT+2
       MBIG=1
       IDENRN = 0
       IF (.NOT. ISREAL) THEN
-         KNUMER = ABS(REF) * DENRAT + HALF
+         KNUMER = INT(ABS(REF) * DENRAT + HALF)
          IF (REF .LE. ZERO) KNUMER = -KNUMER
-         IDENRN = DENRAT
-         MBIG = DI*DENRAT-HALF
-         IWINTG = ABS(WINSRU) * DENRAT + HALF
-         IWINTL = ABS(WINSRL) * DENRAT + HALF
+         IDENRN = INT(DENRAT)
+         MBIG = INT(DI*DENRAT-HALF)
+         IWINTG = INT(ABS(WINSRU) * DENRAT + HALF)
+         IWINTL = INT(ABS(WINSRL) * DENRAT + HALF)
          IF (WINSRU .LT. ZERO) IWINTG = -IWINTG
          IF (WINSRL .LT. ZERO) IWINTL = -IWINTL
          MB1 = MBIG + 1
@@ -369,6 +379,7 @@ C     IF (WINSRU.LE.REF) IFAULT=IFAULT+2
 C
 C     SET UP COEFFICIENT MATRIX OF LINEAR EQUATIONS
 C
+      FACT=ONE
       DO 110 MLOOP=1,MAXHLF
         IF (ISREAL) THEN
           MBIG=2*MBIG

@@ -41,7 +41,7 @@ A list including three variables:
 }
 
 \author{Douglas M. Hawkins, David H. Olwell, and Boxiang Wang\cr
-Maintainer: Boxiang Wang  \email{boxiang@umn.edu}}
+Maintainer: Boxiang Wang  \email{boxiang-wang@uiowa.edu}}
 \references{
 Hawkins, D. M. and Olwell, D. H. (1998)
 ``Cumulative Sum Charts and Charting for Quality Improvement (Information Science and Statistics)", Springer, New York. \cr
