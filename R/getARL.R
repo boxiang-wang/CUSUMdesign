@@ -166,7 +166,7 @@ getARL = function(distr=NULL, K=NULL, H=NULL,
 
   if (isint) {
     den = .Fortran('getden', ref=as.double(ref), di=as.double(di), 
-      denrat=as.double(denrat), as.logical(TRUE), as.logical(FALSE))
+      denrat=as.double(denrat))
     ref = den$ref
     di = den$di
     denrat = den$denrat

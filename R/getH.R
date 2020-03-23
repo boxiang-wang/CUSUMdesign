@@ -209,7 +209,7 @@ getH = function(distr=NULL, ARL=NULL, ICmean=NULL, ICsd=NULL,
   ## If integer - find rational denominator
   if (isint) {
     den = .Fortran('getden', ref=as.double(ref), temp=as.double(temp), 
-      denrat=as.double(denrat), as.logical(FALSE), as.logical(FALSE))
+      denrat=as.double(denrat))
     ref = den$ref
     temp = den$temp
     denrat = den$denrat
